@@ -35,13 +35,17 @@ hide_table_of_contents: false
 
 1. Rechte vorbereiten
 
-        # check the IDs beforehand!
+        # make sure check the user / group IDs first
 
-        mkdir -p esdata-public
+        mkdir -p mde-elasticsearch/esdata-public
+        mkdir -p mde-geonetwork/logs
+        mkdir -p mde-geonetwork/gn-public-data/
 
-        chown 1000:0 esdata-public
+        chown -R 1000:0 mde-elasticsearch/esdata-public
 
-        chown -R 1000:1000 mde-backend/*
+        chmod 775 mde-elasticsearch/esdata-public/
+
+        chown -R 0:0 mde-backend/*
 
         chown -R 1000:1000 mde-client/*
 
@@ -50,6 +54,10 @@ hide_table_of_contents: false
         chown -R 1000:1000 codelists/*
 
         chown -R 1000:1000 mde-client-codelists/*
+
+        chown -R 999:999 mde-geonetwork/gn-public-data/
+
+        chown -R 999:999 mde-geonetwork/logs
 
 1. Exit podman unshare
 
