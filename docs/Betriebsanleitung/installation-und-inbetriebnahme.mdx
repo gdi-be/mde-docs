@@ -9,33 +9,104 @@ hide_table_of_contents: false
 
 1. Das Repository `mde-deployment` liegt auf dem Zielserver im gewünschten Stand
    vor.
-2. Die Umgebungsdateien werden aus den Beispielvorlagen abgeleitet und mit
+
+        git clone https://github.com/gdi-be/mde-deployment.git
+
+1. Die Umgebungsdateien werden aus den Beispielvorlagen abgeleitet und mit
    standortspezifischen Werten gepflegt.
-3. Für privilegierte Ports wird auf Hostebene die Konfiguration
-   `net.ipv4.ip_unprivileged_port_start=80` gesetzt.
-4. Die Inbetriebnahme erfolgt mit der passenden Compose-Datei:
+
+        cp .env.example .env
+        cp .client-env.example .client-env
+        cp mde-backend/variables-example.json mde-backend/variables.json
+
+1. Für privilegierte Ports wird auf Hostebene die Konfiguration `net.ipv4.ip_unprivileged_port_start=80` in der Datei `/etc/sysctl.conf` gesetzt.
+
+        echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee -a /etc/sysctl.conf
+
+        sysctl -p
+
+1. podman unshare
+
+        podman unshare
+
+1. Variables & Codelists duplizieren
+
+        ./sync.sh
+
+1. Rechte vorbereiten
+
+        # make sure check the user / group IDs first
+
+        mkdir -p mde-elasticsearch/esdata-public
+        mkdir -p mde-geonetwork/logs
+        mkdir -p mde-geonetwork/gn-public-data/
+
+        chown -R 1000:0 mde-elasticsearch/esdata-public
+
+        chmod 775 mde-elasticsearch/esdata-public/
+
+        chown -R 10001:10001 mde-backend/*
+
+        chown -R 1000:1000 mde-client/*
+
+        chown -R 999:999 mde-postgres/*
+
+        chown -R 1000:1000 codelists/*
+
+        chown -R 1000:1000 mde-client-codelists/*
+
+        chown -R 999:999 mde-geonetwork/gn-public-data/
+
+        chown -R 999:999 mde-geonetwork/logs
+
+1. Exit podman unshare
+
+        exit
+
+1. Die Inbetriebnahme erfolgt mit der passenden Compose-Datei:
    - Test: `docker-compose-test.yml`
    - Produktion: `docker-compose-prod.yml`
-5. Nach dem ersten Start erfolgt ein zweiter Startzyklus, falls
-   Initialisierungsabhängigkeiten beim Erstlauf zu verzögerter
-   Containerbereitschaft führen.
 
-Beispielkommandos:
+1. Nach dem ersten Start erfolgt ein zweiter Startzyklus, falls Initialisierungsabhängigkeiten beim Erstlauf zu verzögerter Containerbereitschaft führen.
 
-```bash
-cp .env.example .env
-cp .client-env.example .client-env
-cp mde-backend/variables-example.json mde-backend/variables.json
+1. Start
 
-podman compose -f docker-compose-test.yml up -d
-# optionaler zweiter Startzyklus
-podman compose -f docker-compose-test.yml down
-podman compose -f docker-compose-test.yml up -d
-```
+        podman compose -f docker-compose-test.yml up -d
+
+        # optionaler zweiter Startzyklus
+        podman compose -f docker-compose-test.yml down
+        podman compose -f docker-compose-test.yml up -d
 
 Weiterführende Installationshinweise sind in der Projekt-README dokumentiert:
 
 - [README](https://github.com/gdi-be/mde-deployment/blob/main/README.md)
+
+### Deployment
+
+Deployment stoppen:
+
+```shell
+podman compose -f docker-compose-test.yml down
+```
+
+Aktuelle Änderungen abrufen:
+
+```shell
+git pull origin main
+```
+
+Vor einem Deployment müssen die Codelists und die variables.json dupliziert werden:
+
+```shell
+./sync.sh
+```
+
+Deployment neustarten:
+
+
+```shell
+podman compose -f docker-compose-test.yml up -d
+```
 
 ### Keycloak-Basiskonfiguration
 
